@@ -34,11 +34,11 @@ const userCollection = database.db(mongodb_database).collection("users");
 app.use(express.urlencoded({ extended: false }));
 
 var mongoStore = MongoStore.create({
-    mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@${mongodb_host}//test`,
+    mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@${mongodb_host}/sessions`,
     crypto: {
         secret: mongodb_session_secret
     }
-})
+});
 
 app.use(session({
     secret: node_session_secret,
@@ -49,7 +49,18 @@ app.use(session({
 ));
 
 app.get('/', (req, res) => {
-    res.send("<h1>Welcome to my website!</h1>");
+    if (!req.session.authenticated) {
+        var html = `
+        <h1>Welcome to my website!</h1>
+        <a href='/login'>Login</a>
+        <br><br>
+        <a href='/createUser'>Signup</a>
+    `;
+        res.send(html);
+    }
+    else {
+        res.redirect('/loggedIn');
+    }
 });
 
 app.get('/about', (req, res) => {
@@ -79,7 +90,7 @@ app.post('/submitEmail', (req, res) => {
         res.redirect('/contact?missing=1');
     }
     else {
-        res.send("Thank you for subscribning with your email: " + email);
+        res.send("Thank you for subscribing with your email: " + email);
     }
 });
 
@@ -176,7 +187,19 @@ app.get('/loggedIn', (req, res) => {
         res.redirect('/login');
     }
     var html = `
-    You are logged in (${req.session.username})!
+    You are logged in ${req.session.username}!
+    </br>
+    <a href='/logout'>Logout</a>
+    `;
+    res.send(html);
+});
+
+app.get('/logout', (req,res) => {
+	req.session.destroy();
+    var html = `
+    You are logged out.
+    </br>
+    <a href='/'>Home</a>
     `;
     res.send(html);
 });
